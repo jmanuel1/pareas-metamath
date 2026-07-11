@@ -302,8 +302,15 @@ JsonTree parse(futhark_context* ctx, const std::string& input, bool verbose_tree
     auto node_types = futhark::UniqueArray<uint8_t, 1>(ctx);
     p.measure("parse", [&]{
         bool valid = false;
-        int err = futhark_entry_json_parse(ctx, &valid, &node_types, tokens, sct, pt);
-        if (err)
+        futhark_opaque_tup2_bool_arr1d_production_t *out;
+        int err = futhark_entry_json_parse(ctx, &out, /* &valid, &node_types, */ tokens, sct, pt);
+        if (err || futhark_context_sync(ctx))
+            throw futhark::Error(ctx);
+        err = futhark_project_opaque_tup2_bool_arr1d_production_t_0(ctx, &valid, out);
+        if (err || futhark_context_sync(ctx))
+            throw futhark::Error(ctx);
+        err = futhark_project_opaque_tup2_bool_arr1d_production_t_1(ctx, &node_types, out);
+        if (err || futhark_context_sync(ctx))
             throw futhark::Error(ctx);
         if (!valid)
             throw std::runtime_error("Parse error");
@@ -327,8 +334,15 @@ JsonTree parse(futhark_context* ctx, const std::string& input, bool verbose_tree
     p.measure("restructure", [&]{
         auto old_node_types = std::move(node_types);
         auto old_parents = std::move(parents);
-        int err = futhark_entry_json_restructure(ctx, &node_types, &parents, old_node_types, old_parents);
-        if (err)
+        futhark_opaque_tup2_arr1d_production_t_arr1d_i32 *out;
+        int err = futhark_entry_json_restructure(ctx, &out, /* &node_types, &parents, */ old_node_types, old_parents);
+        if (err || futhark_context_sync(ctx))
+            throw futhark::Error(ctx);
+        err = futhark_project_opaque_tup2_arr1d_production_t_arr1d_i32_0(ctx, &node_types, out);
+        if (err || futhark_context_sync(ctx))
+            throw futhark::Error(ctx);
+        err = futhark_project_opaque_tup2_arr1d_production_t_arr1d_i32_1(ctx, &parents, out);
+        if (err || futhark_context_sync(ctx))
             throw futhark::Error(ctx);
     });
 

@@ -69,6 +69,16 @@ pareas_prof_dep = declare_dependency(
     dependencies: fmt_dep,
 )
 
+grep = find_program('grep')
+# Check if "Microsoft" is in the system information
+is_wsl = run_command(grep, '-i', 'Microsoft', '/proc/version').returncode() == 0
+
+if is_wsl
+  message('WSL detected!')
+else
+  message('Standard Linux detected.')
+endif
+
 # Compiler
 futhark_deps = [dependency('threads')]
 
@@ -79,7 +89,16 @@ futhark_backend = get_option('futhark-backend')
 if futhark_backend == 'opencl'
     futhark_deps += dependency('OpenCL')
 elif futhark_backend == 'cuda'
-    futhark_deps += dependency('cuda', modules: ['cuda', 'cudart', 'nvrtc'])
+    if is_wsl
+        # Because of the way the CUDA shared libraries work in WSL, the linker complained about undefined symbols that are supposed to be in `libcuda.so`, so I linked with the libcuda in `/usr/lib/wsl/lib`.
+        futhark_deps += declare_dependency(
+            link_args : ['-L/usr/lib/wsl/lib', '-lcuda'],
+            include_directories : include_directories('/usr/local/cuda/include')
+        )
+        futhark_deps += dependency('cuda', modules: ['cudart', 'nvrtc'])
+    else
+        futhark_deps += dependency('cuda', modules: ['cuda', 'cudart', 'nvrtc'])
+    endif
 endif
 
 # Compiler
@@ -161,8 +180,21 @@ inputs += grammar_fut
 futhark_generated = custom_target(
     'futhark',
     input: inputs,
-    output: ['futhark_generated.c', 'futhark_generated.h', 'futhark_config.hash'],
+    output: ['futhark_generated.c', 'futhark_generated.h', 'futhark_config.hash', 'futhark_generated.json'],
     command: futhark_compile_command,
+)
+
+generate_futhark_bridge_command = [
+    find_program('src/tools/generate_futhark_bridge.py'),
+    '@INPUT@',
+    '@OUTPUT@',
+]
+
+futhark_bridge = custom_target(
+    'futhark-bridge',
+    input: [futhark_generated[3]],
+    output: ['futhark_bridge.hpp'],
+    command: generate_futhark_bridge_command,
 )
 
 # Final executable
@@ -177,7 +209,7 @@ sources = files(
 
 pareas_exe = executable(
     'pareas',
-    [grammar_hpp, grammar_cpp, grammar_asm, sources, futhark_generated],
+    [grammar_hpp, grammar_cpp, grammar_asm, sources, futhark_generated, futhark_bridge],
     build_by_default: not meson.is_subproject(),
     dependencies: [pareas_prof_dep, fmt_dep, futhark_deps],
     include_directories: inc,

@@ -65,6 +65,12 @@ namespace futhark {
             return *this;
         }
 
+        UniqueOpaqueArray& operator=(Array* data) {
+            this->clear();
+            this->data = data;
+            return *this;
+        }
+
         UniqueOpaqueArray(const UniqueOpaqueArray&) = delete;
         UniqueOpaqueArray& operator=(const UniqueOpaqueArray&) = delete;
 
@@ -105,10 +111,10 @@ namespace futhark {
     using UniqueLexTable = UniqueOpaqueArray<futhark_opaque_lex_table, futhark_free_opaque_lex_table>;
     using UniqueParseTable = UniqueOpaqueArray<futhark_opaque_parse_table, futhark_free_opaque_parse_table>;
     using UniqueStackChangeTable = UniqueOpaqueArray<futhark_opaque_stack_change_table, futhark_free_opaque_stack_change_table>;
-    using UniqueTokenArray = UniqueOpaqueArray<futhark_opaque_arr_token_1d, futhark_free_opaque_arr_token_1d>;
+    using UniqueTokenArray = UniqueOpaqueArray<futhark_opaque_arr1d_token, futhark_free_opaque_arr1d_token>;
     using UniqueTree = UniqueOpaqueArray<futhark_opaque_Tree, futhark_free_opaque_Tree>;
-    using UniqueFuncInfoArray = UniqueOpaqueArray<futhark_opaque_arr_FuncInfo_1d, futhark_free_opaque_arr_FuncInfo_1d>;
-    using UniqueInstrArray = UniqueOpaqueArray<futhark_opaque_arr_Instr_1d, futhark_free_opaque_arr_Instr_1d>;
+    using UniqueFuncInfoArray = UniqueOpaqueArray<futhark_opaque_arr1d_FuncInfo, futhark_free_opaque_arr1d_FuncInfo>;
+    using UniqueInstrArray = UniqueOpaqueArray<futhark_opaque_arr1d_Instr, futhark_free_opaque_arr1d_Instr>;
 
     template <typename T, size_t N>
     struct ArrayTraits;
@@ -156,6 +162,12 @@ namespace futhark {
 
         operator const Array*() const {
             return this->handle;
+        }
+
+        UniqueArray& operator=(Array* ptr) noexcept {
+            this->handle.clear();
+            this->handle.data = ptr;
+            return *this;
         }
 
         void values(T* out) const {

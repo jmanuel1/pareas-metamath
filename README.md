@@ -1,5 +1,9 @@
 # Pareas
 
+# Changes
+
+* [Recent Futhark versions always generate one out-parameter for an entry point](https://github.com/diku-dk/futhark/issues/2403), so I had to make edits to get the C++ to compile again.
+
 GPU-accelerated compiler for a simple programming language, which outputs RISC-V machine code.
 
 ## Usage
@@ -59,7 +63,7 @@ Building Pareas requires the following dependencies:
 * A C++20-capable compiler such as clang or gcc.
 * The [Meson](https://mesonbuild.com/) build system.
 * [Ninja](https://ninja-build.org) or [Samurai](https://github.com/michaelforney/samurai) to build.
-* A [Futhark](https://github.com/diku-dk/futhark) compiler. The latest tested version is 20.6.
+* A [Futhark](https://github.com/diku-dk/futhark) compiler. The latest tested version is Futhark 0.27.0 (git: a97cc9019d88e9abc656c8de5a7b2528f009df92).
 * Python, which is required for Meson as well as some build tools included in the project.
 
 Some additional dependencies such as `{fmt}` are automatically downloaded by Meson, and so this requires an active internet connection.
@@ -145,3 +149,9 @@ $ echo libamdocl-orca64.so > /etc/OpenCL/vendors/amdocl-orca64.icd
 ```
 
 After this, `clinfo` should print an additional platform with name `AMD Accelerated Parallel PRocessing`. When invoking Pareas, make sure that the right device is selected by passing `pareas -d DeviceName`. `DeviceName` can be found in the output of `clinfo`.
+
+### CUDA on WSL Ubuntu
+
+Because I have an older GPU (NVIDIA GeForce MX150), I had to use CUDA Toolkit 12. When I tried version 13, I found that version 13 doesn't support the instruction set of my GPU.
+
+Version 13 might work for you, but the [WSL user guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html) seems to recommend version 12 by reference as of July 10, 2026.

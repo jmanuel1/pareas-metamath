@@ -1,5 +1,6 @@
 #include "pareas/compiler/frontend.hpp"
 #include "pareas/compiler/futhark_interop.hpp"
+#include "futhark_bridge.hpp"
 
 #include "pareas_grammar.hpp"
 
@@ -136,10 +137,13 @@ namespace frontend {
         debug_log_region("parse");
         auto node_types = futhark::UniqueArray<uint8_t, 1>(ctx);
         p.measure("parse", [&]{
+            futhark::UniqueTuple_tup2_bool_arr1d_production_t ret(ctx);
             bool valid = false;
-            int err = futhark_entry_frontend_parse(ctx, &valid, &node_types, tokens, sct, pt);
+            int err = futhark_entry_frontend_parse(ctx, &ret, tokens, sct, pt);
             if (err)
                 throw futhark::Error(ctx);
+            valid = ret.project_0();
+            node_types = ret.project_1();
             if (!valid)
                 throw CompileError(Error::PARSE_ERROR);
         });
@@ -165,9 +169,12 @@ namespace frontend {
         p.measure("fix bin ops", [&]{
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
-            int err = futhark_entry_frontend_fix_bin_ops(ctx, &node_types, &parents, old_node_types, old_parents);
+            futhark::UniqueTuple_tup2_arr1d_production_t_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_fix_bin_ops(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            node_types = ret.project_0();
+            parents = ret.project_1();
         });
 
         if (verbose_tree) {
@@ -178,9 +185,13 @@ namespace frontend {
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
             bool valid;
-            int err = futhark_entry_frontend_fix_if_else(ctx, &valid, &node_types, &parents, old_node_types, old_parents);
+            futhark::UniqueTuple_tup3_bool_arr1d_production_t_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_fix_if_else(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            valid = ret.project_0();
+            node_types = ret.project_1();
+            parents = ret.project_2();
             if (!valid)
                 throw CompileError(Error::STRAY_ELSE_ERROR);
         });
@@ -188,18 +199,25 @@ namespace frontend {
         p.measure("flatten lists", [&]{
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
-            int err = futhark_entry_frontend_flatten_lists(ctx, &node_types, &parents, old_node_types, old_parents);
+            futhark::UniqueTuple_tup2_arr1d_production_t_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_flatten_lists(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            node_types = ret.project_0();
+            parents = ret.project_1();
         });
 
         p.measure("fix names", [&]{
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
             bool valid;
-            int err = futhark_entry_frontend_fix_names(ctx, &valid, &node_types, &parents, old_node_types, old_parents);
+            futhark::UniqueTuple_tup3_bool_arr1d_production_t_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_fix_names(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            valid = ret.project_0();
+            node_types = ret.project_1();
+            parents = ret.project_2();
             if (!valid)
                 throw CompileError(Error::INVALID_DECL);
         });
@@ -214,9 +232,12 @@ namespace frontend {
         p.measure("fix fn decls", [&]{
             auto old_parents = std::move(parents);
             bool valid;
-            int err = futhark_entry_frontend_fix_fn_decls(ctx, &valid, &parents, node_types, old_parents);
+            futhark::UniqueTuple_tup2_bool_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_fix_fn_decls(ctx, &ret, node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            valid = ret.project_0();
+            parents = ret.project_1();
             if (!valid)
                 throw CompileError(Error::INVALID_FN_PROTO);
         });
@@ -232,9 +253,13 @@ namespace frontend {
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
             bool valid;
-            int err = futhark_entry_frontend_fix_decls(ctx, &valid, &node_types, &parents, old_node_types, old_parents);
+            futhark::UniqueTuple_tup3_bool_arr1d_production_t_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_fix_decls(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            valid = ret.project_0();
+            node_types = ret.project_1();
+            parents = ret.project_2();
             if (!valid)
                 throw CompileError(Error::INVALID_DECL);
         });
@@ -250,9 +275,13 @@ namespace frontend {
         p.measure("compute prev siblings", [&]{
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
-            int err = futhark_entry_frontend_compute_prev_sibling(ctx, &node_types, &parents, &prev_siblings, old_node_types, old_parents);
+            futhark::UniqueTuple_tup3_arr1d_production_t_arr1d_i32_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_compute_prev_sibling(ctx, &ret, old_node_types, old_parents);
             if (err)
                 throw futhark::Error(ctx);
+            node_types = ret.project_0();
+            parents = ret.project_1();
+            prev_siblings = ret.project_2();
         });
 
         p.measure("check assignments", [&]{
@@ -271,9 +300,11 @@ namespace frontend {
             auto old_node_types = std::move(node_types);
             auto old_parents = std::move(parents);
             auto old_prev_siblings = std::move(prev_siblings);
-            int err = futhark_entry_frontend_insert_derefs(ctx, &node_types, &parents, &prev_siblings, old_node_types, old_parents, old_prev_siblings);
+            futhark::UniqueTuple_tup3_arr1d_production_t_arr1d_i32_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_insert_derefs(ctx, &ret, old_node_types, old_parents, old_prev_siblings);
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(node_types, parents, prev_siblings) = ret.to_tuple();
         });
 
         auto node_data = futhark::UniqueArray<uint32_t, 1>(ctx);
@@ -287,9 +318,11 @@ namespace frontend {
         auto resolution = futhark::UniqueArray<int32_t, 1>(ctx);
         p.measure("resolve vars", [&]{
             bool valid;
-            int err = futhark_entry_frontend_resolve_vars(ctx, &valid, &resolution, node_types, parents, prev_siblings, node_data);
+            futhark::UniqueTuple_tup2_bool_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_resolve_vars(ctx, &ret, node_types, parents, prev_siblings, node_data);
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(valid, resolution) = ret.to_tuple();
             if (!valid)
                 throw CompileError(Error::INVALID_VARIABLE);
         });
@@ -297,9 +330,11 @@ namespace frontend {
         p.measure("resolve fns", [&]{
             auto old_resolution = std::move(resolution);
             bool valid;
-            int err = futhark_entry_frontend_resolve_fns(ctx, &valid, &resolution, node_types, old_resolution, node_data);
+            futhark::UniqueTuple_tup2_bool_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_resolve_fns(ctx, &ret, node_types, old_resolution, node_data);
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(valid, resolution) = ret.to_tuple();
             if (!valid)
                 throw CompileError(Error::DUPLICATE_FN_OR_INVALID_CALL);
         });
@@ -307,9 +342,11 @@ namespace frontend {
         p.measure("resolve args", [&]{
             auto old_resolution = std::move(resolution);
             bool valid;
-            int err = futhark_entry_frontend_resolve_args(ctx, &valid, &resolution, node_types, parents, prev_siblings, old_resolution);
+            futhark::UniqueTuple_tup2_bool_arr1d_i32 ret(ctx);
+            int err = futhark_entry_frontend_resolve_args(ctx, &ret, node_types, parents, prev_siblings, old_resolution);
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(valid, resolution) = ret.to_tuple();
             if (!valid)
                 throw CompileError(Error::INVALID_ARG_COUNT);
         });
@@ -317,9 +354,11 @@ namespace frontend {
         auto data_types = futhark::UniqueArray<uint8_t, 1>(ctx);
         p.measure("resolve dtypes", [&]{
             bool valid;
-            int err = futhark_entry_frontend_resolve_data_types(ctx, &valid, &data_types, node_types, parents, prev_siblings, resolution.get());
+            futhark::UniqueTuple_tup2_bool_arr1d_data_type_t ret(ctx);
+            int err = futhark_entry_frontend_resolve_data_types(ctx, &ret, node_types, parents, prev_siblings, resolution.get());
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(valid, data_types) = ret.to_tuple();
             if (!valid)
                 throw CompileError(Error::TYPE_ERROR);
         });
@@ -345,15 +384,10 @@ namespace frontend {
         auto ast = DeviceAst(ctx);
         p.measure("build ast", [&]{
             // Other arrays are destructed at the end of the function.
+            futhark::UniqueTuple_tup7_arr1d_production_t_arr1d_i32_arr1d_u32_arr1d_data_type_arr1d_i32_arr1d_i32_arr1d_u32 ret(ctx);
             int err = futhark_entry_frontend_build_ast(
                 ctx,
-                &ast.node_types,
-                &ast.parents,
-                &ast.node_data,
-                &ast.data_types,
-                &ast.node_depths,
-                &ast.child_indexes,
-                &ast.fn_tab,
+                &ret,
                 node_types,
                 parents,
                 node_data,
@@ -363,6 +397,15 @@ namespace frontend {
             );
             if (err)
                 throw futhark::Error(ctx);
+            std::tie(
+                ast.node_types,
+                ast.parents,
+                ast.node_data,
+                ast.data_types,
+                ast.node_depths,
+                ast.child_indexes,
+                ast.fn_tab
+            ) = ret.to_tuple();
         });
 
         p.end("sema");
