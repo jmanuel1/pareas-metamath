@@ -226,6 +226,8 @@ namespace pareas::lexer {
                 return '\r';
             case 't':
                 return '\t';
+            case 'f':
+                return '\f';
             case '\\':
             case '\'':
             case '"':

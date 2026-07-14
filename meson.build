@@ -282,3 +282,20 @@ pareas_json_exe = executable(
     dependencies: [pareas_prof_dep, fmt_dep, futhark_deps],
     include_directories: inc,
 )
+
+metamath_grammar = custom_target(
+    'metamath-grammar',
+    input: ['src/metamath/metamath.lex', 'src/metamath/metamath.g'],
+    output: ['metamath_grammar.hpp', 'metamath_grammar.cpp', 'metamath_grammar.fut', 'metamath_grammar.S', 'metamath_grammar.dat'],
+    command: [
+        pareas_lpg_exe,
+        '--lexer', '@INPUT0@',
+        '--parser', '@INPUT1@',
+        '-o', '@OUTDIR@/metamath_grammar',
+        '--namespace', 'metamath',
+    ],
+)
+metamath_grammar_hpp = metamath_grammar[0]
+metamath_grammar_cpp = metamath_grammar[1]
+metamath_grammar_fut = metamath_grammar[2]
+metamath_grammar_asm = metamath_grammar[3]
