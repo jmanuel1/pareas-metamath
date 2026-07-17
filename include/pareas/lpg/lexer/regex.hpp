@@ -17,6 +17,7 @@ namespace pareas::lexer {
         virtual void print(std::ostream& os) const = 0;
         virtual StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const = 0;
         virtual bool matches_empty() const = 0;
+        virtual bool equals_structurally(const RegexNode& other) const = 0;
 
         virtual ~RegexNode() = default;
     };
@@ -32,6 +33,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 
     struct AlternationNode: public RegexNode {
@@ -43,6 +45,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 
     enum class RepeatType {
@@ -61,6 +64,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 
     struct CharSetNode: public RegexNode {
@@ -73,6 +77,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 
     struct CharNode: public RegexNode {
@@ -84,6 +89,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 
     struct EmptyNode: public RegexNode {
@@ -92,6 +98,7 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        bool equals_structurally(const RegexNode& other) const override;
     };
 }
 

@@ -11,6 +11,8 @@ namespace pareas::lexer {
         bool contains(uint8_t c) const;
         bool intersecting_or_adjacent(const CharRange& other) const;
         void merge(const CharRange& other);
+
+        bool operator==(const CharRange&) const = default;
     };
 }
 

@@ -38,6 +38,16 @@ namespace pareas::lexer {
         return true;
     }
 
+    bool SequenceNode::equals_structurally(const RegexNode& other) const {
+        const auto* other_sequence = dynamic_cast<const SequenceNode*>(&other);
+        if (!other_sequence) return false;
+        if (this->children.size() != other_sequence->children.size()) return false;
+        for (size_t i = 0; i < this->children.size(); i++) {
+            if (!this->children[i]->equals_structurally(*(other_sequence->children[i]))) return false;
+        }
+        return true;
+    }
+
     void AlternationNode::print(std::ostream& os) const {
         if (this->children.size() == 1) {
             this->children[0]->print(os);
@@ -78,6 +88,15 @@ namespace pareas::lexer {
         }
 
         return this->children.size() == 0;
+
+    bool AlternationNode::equals_structurally(const RegexNode& other) const {
+        const auto* other_sequence = dynamic_cast<const AlternationNode*>(&other);
+        if (!other_sequence) return false;
+        if (this->children.size() != other_sequence->children.size()) return false;
+        for (size_t i = 0; i < this->children.size(); i++) {
+            if (!this->children[i]->equals_structurally(*(other_sequence->children[i]))) return false;
+        }
+        return true;
     }
 
     void RepeatNode::print(std::ostream& os) const {
@@ -125,6 +144,26 @@ namespace pareas::lexer {
             case RepeatType::ONE_OR_MORE:
                 return this->child->matches_empty();
         }
+    }
+
+    bool RepeatNode::equals_structurally(const RegexNode& other) const {
+        const auto* other_sequence = dynamic_cast<const RepeatNode*>(&other);
+        if (!other_sequence) return false;
+        if (this->repeat_type != other_sequence->repeat_type) return false;
+        if (!this->child->equals_structurally(*(other_sequence->child))) return false;
+        return true;
+    }
+
+
+    bool CharSetNode::equals_structurally(const RegexNode& other) const {
+        const auto* other_sequence = dynamic_cast<const CharSetNode*>(&other);
+        if (!other_sequence) return false;
+        if (this->inverted != other_sequence->inverted) return false;
+        if (this->ranges.size() != other_sequence->ranges.size()) return false;
+        for (size_t i = 0; i < this->ranges.size(); i++) {
+            if (this->ranges[i] != other_sequence->ranges[i]) return false;
+        }
+        return true;
     }
 
     void CharSetNode::print(std::ostream& os) const {
@@ -196,6 +235,13 @@ namespace pareas::lexer {
         return false;
     }
 
+    bool CharNode::equals_structurally(const RegexNode& other) const {
+        const auto* other_sequence = dynamic_cast<const CharNode*>(&other);
+        if (!other_sequence) return false;
+        if (this->c != other_sequence->c) return false;
+        return true;
+    }
+
     void EmptyNode::print(std::ostream& is) const {}
 
     auto EmptyNode::compile(FiniteStateAutomaton& fsa, StateIndex start) const -> StateIndex {
@@ -204,5 +250,9 @@ namespace pareas::lexer {
 
     bool EmptyNode::matches_empty() const {
         return true;
+    }
+
+    bool EmptyNode::equals_structurally(const RegexNode& other) const {
+        return dynamic_cast<const EmptyNode*>(&other);
     }
 }
