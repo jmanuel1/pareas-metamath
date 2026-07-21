@@ -9,43 +9,75 @@
 #include <utility>
 #include <iosfwd>
 #include <cstdint>
+#include <typeindex>
+#include <typeinfo>
+#include <set>
+#include <compare>
 
 namespace pareas::lexer {
+    struct RegexNode;
+
+    using SharedRegexNode = std::shared_ptr<RegexNode>;
+
+    /** Lexicographic comparison. Does no normalization or consideration of equivalence beyond syntax */
+    bool compare_shared_regex_node(SharedRegexNode a, SharedRegexNode b);
+
+    struct SharedRegexNodeLess {
+        bool operator()(const SharedRegexNode& lhs, const SharedRegexNode& rhs) const {
+            return compare_shared_regex_node(lhs, rhs);
+        }
+    };
+
+    using RegexNodeSet = std::set<SharedRegexNode, SharedRegexNodeLess>;
+
     struct RegexNode {
         using StateIndex = FiniteStateAutomaton::StateIndex;
 
         virtual void print(std::ostream& os) const = 0;
         virtual StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const = 0;
         virtual bool matches_empty() const = 0;
-        virtual bool equals_structurally(const RegexNode& other) const = 0;
+        auto operator<=>(const RegexNode& other) const {
+            auto type_order = std::type_index(typeid(*this)) <=> std::type_index(typeid(other));
+            if (type_order == 0) {
+                return this->compare_structurally(other);
+            }
+            return type_order;
+        }
+        auto operator==(const RegexNode& other) const {
+            return (*this <=> other) == 0;
+        }
 
         virtual ~RegexNode() = default;
+
+    protected:
+        virtual std::strong_ordering compare_structurally(const RegexNode& other) const = 0;
     };
 
-    using UniqueRegexNode = std::unique_ptr<RegexNode>;
-
     struct SequenceNode: public RegexNode {
-        std::vector<UniqueRegexNode> children;
+        std::vector<SharedRegexNode> children;
 
-        SequenceNode(std::vector<UniqueRegexNode>&& children):
+        SequenceNode(std::vector<SharedRegexNode>&& children):
             children(std::move(children)) {}
 
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 
     struct AlternationNode: public RegexNode {
-        std::vector<UniqueRegexNode> children;
+        RegexNodeSet children;
 
-        AlternationNode(std::vector<UniqueRegexNode>&& children):
+        AlternationNode(RegexNodeSet&& children):
             children(std::move(children)) {}
 
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 
     enum class RepeatType {
@@ -56,28 +88,32 @@ namespace pareas::lexer {
 
     struct RepeatNode: public RegexNode {
         RepeatType repeat_type;
-        UniqueRegexNode child;
+        SharedRegexNode child;
 
-        RepeatNode(RepeatType repeat_type, UniqueRegexNode&& child):
-            repeat_type(repeat_type), child(std::move(child)) {}
+        RepeatNode(RepeatType repeat_type, SharedRegexNode child):
+            repeat_type(repeat_type), child(child) {}
 
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 
     struct CharSetNode: public RegexNode {
-        std::vector<CharRange> ranges;
+        std::set<CharRange> ranges;
         bool inverted;
 
-        CharSetNode(std::vector<CharRange>&& ranges, bool inverted):
+        CharSetNode(std::set<CharRange>&& ranges, bool inverted):
             ranges(std::move(ranges)), inverted(inverted) {}
 
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 
     struct CharNode: public RegexNode {
@@ -89,7 +125,9 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 
     struct EmptyNode: public RegexNode {
@@ -98,7 +136,9 @@ namespace pareas::lexer {
         void print(std::ostream& os) const override;
         StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
-        bool equals_structurally(const RegexNode& other) const override;
+
+    private:
+        std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
 }
 

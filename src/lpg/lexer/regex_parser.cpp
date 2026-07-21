@@ -31,7 +31,7 @@ namespace pareas::lexer {
     RegexParser::RegexParser(Parser* parser):
         parser(parser) {}
 
-    UniqueRegexNode RegexParser::parse() {
+    SharedRegexNode RegexParser::parse() {
         if (!this->parser->expect('/'))
             throw RegexParseError();
         auto regex = this->alternation();
@@ -41,28 +41,28 @@ namespace pareas::lexer {
         return regex;
     }
 
-    UniqueRegexNode RegexParser::alternation() {
+    SharedRegexNode RegexParser::alternation() {
         auto first = this->sequence();
         if (!this->parser->test('|'))
             return first;
 
-        auto children = std::vector<UniqueRegexNode>();
-        children.push_back(std::move(first));
+        auto children = RegexNodeSet();
+        children.insert(first);
 
         while (this->parser->eat('|')) {
-            children.push_back(this->sequence());
+            children.insert(this->sequence());
         }
 
-        return std::make_unique<AlternationNode>(std::move(children));
+        return std::make_shared<AlternationNode>(std::move(children));
     }
 
-    UniqueRegexNode RegexParser::sequence() {
+    SharedRegexNode RegexParser::sequence() {
         // If the first repeat matches nothing, then return an emopty sequence.
         auto first = this->maybe_repeat();
         if (!first)
-            return std::make_unique<EmptyNode>();
+            return std::make_shared<EmptyNode>();
 
-        auto children = std::vector<UniqueRegexNode>();
+        auto children = std::vector<SharedRegexNode>();
         children.push_back(std::move(first));
 
         // Repeat while matching something.
@@ -70,10 +70,10 @@ namespace pareas::lexer {
             children.push_back(std::move(child));
         }
 
-        return std::make_unique<SequenceNode>(std::move(children));
+        return std::make_shared<SequenceNode>(std::move(children));
     }
 
-    UniqueRegexNode RegexParser::maybe_repeat() {
+    SharedRegexNode RegexParser::maybe_repeat() {
         auto child = this->maybe_atom();
         auto loc = this->parser->loc();
 
@@ -91,18 +91,18 @@ namespace pareas::lexer {
             throw RegexParseError();
         }
 
-        return std::make_unique<RepeatNode>(
+        return std::make_shared<RepeatNode>(
             ques ? RepeatType::ZERO_OR_ONE : star ? RepeatType::ZERO_OR_MORE : RepeatType::ONE_OR_MORE,
             std::move(child)
         );
     }
 
-    UniqueRegexNode RegexParser::maybe_atom() {
+    SharedRegexNode RegexParser::maybe_atom() {
         auto c = this->parser->peek();
         auto loc = this->parser->loc();
 
         if (c == '.') {
-            return std::make_unique<CharSetNode>(std::vector<CharRange>(), true);
+            return std::make_shared<CharSetNode>(std::set<CharRange>(), true);
         } else if (c == '[') {
             return this->group();
         } else if (this->parser->eat('(')) {
@@ -111,7 +111,7 @@ namespace pareas::lexer {
                 throw RegexParseError();
             return child;
         } else if (c == '\\') {
-            return std::make_unique<CharNode>(this->escaped_char());
+            return std::make_shared<CharNode>(this->escaped_char());
         } else if (!c.has_value() || is_control_char(c.value())) {
             return nullptr; // nullptr used as optional here
         } else if (!std::isprint(c.value())) {
@@ -123,10 +123,10 @@ namespace pareas::lexer {
         }
 
         this->parser->consume();
-        return std::make_unique<CharNode>(c.value());
+        return std::make_shared<CharNode>(c.value());
     }
 
-    UniqueRegexNode RegexParser::group() {
+    SharedRegexNode RegexParser::group() {
         auto parse_char = [&] {
             auto c = this->parser->peek();
             if (!c.has_value()) {
@@ -188,7 +188,7 @@ namespace pareas::lexer {
             insert_range({min, max});
         }
 
-        return std::make_unique<CharSetNode>(std::move(ranges), inverted);
+        return std::make_shared<CharSetNode>(std::set<CharRange>(ranges.begin(), ranges.end()), inverted);
     }
 
     uint8_t RegexParser::escaped_char() {

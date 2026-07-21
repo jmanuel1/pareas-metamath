@@ -42,7 +42,7 @@ namespace pareas::lexer {
         this->parser->eat_delim(false);
 
         auto regex_parser = RegexParser(this->parser);
-        auto root = UniqueRegexNode(nullptr);
+        auto root = SharedRegexNode(nullptr);
         try {
             root = regex_parser.parse();
         } catch (const RegexParseError&) {

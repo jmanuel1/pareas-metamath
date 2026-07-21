@@ -17,14 +17,14 @@ namespace pareas::lexer {
 
     public:
         RegexParser(Parser* parser);
-        UniqueRegexNode parse();
+        SharedRegexNode parse();
 
     private:
-        UniqueRegexNode alternation();
-        UniqueRegexNode sequence();
-        UniqueRegexNode maybe_repeat();
-        UniqueRegexNode maybe_atom();
-        UniqueRegexNode group();
+        SharedRegexNode alternation();
+        SharedRegexNode sequence();
+        SharedRegexNode maybe_repeat();
+        SharedRegexNode maybe_atom();
+        SharedRegexNode group();
         uint8_t escaped_char();
     };
 }
