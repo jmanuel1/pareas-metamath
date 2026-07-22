@@ -34,8 +34,11 @@ namespace pareas::lexer {
         using StateIndex = FiniteStateAutomaton::StateIndex;
 
         virtual void print(std::ostream& os) const = 0;
-        virtual StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const = 0;
+        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const;
         virtual bool matches_empty() const = 0;
+        virtual SharedRegexNode take_derivative(char ch) const = 0;
+        /** Using the approximation of equivalence defined in https://www.khoury.northeastern.edu/home/turon/re-deriv.pdf */
+        virtual SharedRegexNode normalize(void) const = 0;
         auto operator<=>(const RegexNode& other) const {
             auto type_order = std::type_index(typeid(*this)) <=> std::type_index(typeid(other));
             if (type_order == 0) {
@@ -60,8 +63,9 @@ namespace pareas::lexer {
             children(std::move(children)) {}
 
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
 
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
@@ -74,8 +78,9 @@ namespace pareas::lexer {
             children(std::move(children)) {}
 
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
@@ -93,9 +98,13 @@ namespace pareas::lexer {
         RepeatNode(RepeatType repeat_type, SharedRegexNode child):
             repeat_type(repeat_type), child(child) {}
 
+        explicit RepeatNode(SharedRegexNode child):
+            repeat_type(RepeatType::ZERO_OR_MORE), child(child) {}
+
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
 
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
@@ -108,9 +117,13 @@ namespace pareas::lexer {
         CharSetNode(std::set<CharRange>&& ranges, bool inverted):
             ranges(std::move(ranges)), inverted(inverted) {}
 
+        explicit CharSetNode(std::set<CharRange>&& ranges):
+            ranges(std::move(ranges)), inverted(false) {}
+
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
 
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
@@ -123,8 +136,9 @@ namespace pareas::lexer {
             c(c) {}
 
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
 
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
@@ -134,12 +148,16 @@ namespace pareas::lexer {
         EmptyNode() = default;
 
         void print(std::ostream& os) const override;
-        StateIndex compile(FiniteStateAutomaton& fsa, StateIndex start) const override;
         bool matches_empty() const override;
+        SharedRegexNode take_derivative(char ch) const override;
+        SharedRegexNode normalize(void) const override;
 
     private:
         std::strong_ordering compare_structurally(const RegexNode& other) const override;
     };
+
+    extern SharedRegexNode emptySetNode;
+    extern SharedRegexNode everything_node;
 }
 
 #endif

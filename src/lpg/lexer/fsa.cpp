@@ -87,8 +87,10 @@ namespace {
 
 namespace pareas::lexer {
     FiniteStateAutomaton::FiniteStateAutomaton() {
-        assert(this->add_state() == REJECT);
-        assert(this->add_state() == START);
+        auto reject = this->add_state();
+        auto start = this->add_state();
+        assert(reject == REJECT);
+        assert(start == START);
     }
 
     size_t FiniteStateAutomaton::num_states() const {
