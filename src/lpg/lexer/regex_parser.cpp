@@ -102,6 +102,7 @@ namespace pareas::lexer {
         auto loc = this->parser->loc();
 
         if (c == '.') {
+            (void)this->parser->consume();
             return std::make_shared<CharSetNode>(std::set<CharRange>(), true);
         } else if (c == '[') {
             return this->group();
