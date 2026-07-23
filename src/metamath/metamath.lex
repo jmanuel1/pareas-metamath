@@ -14,9 +14,10 @@ dollar_f = /$f/
 dollar_e = /$d/
 dollar_a = /$a/
 dollar_p = /$p/
-dollar_period = /$./
+dollar_d = /$d/
+dollar_period = /$\./
 dollar_equal = /$=/
-# dollar_lparen = /$(/
-# dollar_rparen = /$)/
-dollar_lbracket = /$[/
-dollar_rbracket = /$]/
+# dollar_lparen = /$\(/
+# dollar_rparen = /$\)/
+dollar_lbracket = /$\[/
+dollar_rbracket = /$\]/
